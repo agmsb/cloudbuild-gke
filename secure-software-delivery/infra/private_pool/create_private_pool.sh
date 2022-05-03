@@ -8,4 +8,4 @@ privatePoolV1Config:
     diskSizeGb: 100
 EOF
 
-gcloud builds worker-pools create $PRIVATE_POOL_NAME --config-from-file privatepool.yaml --region $REGION
+gcloud builds worker-pools create $PRIVATE_POOL_NAME --config-from-file private-pool.yaml --region $REGION

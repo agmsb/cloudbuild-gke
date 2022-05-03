@@ -16,3 +16,7 @@ PRIVATE_POOLS_IP_RANGE_NAME=private-pool-ip-range
 
 # Private pool variables
 PRIVATE_POOL_NAME=private-pool
+
+# IAM variables
+GCP_SA_NAME_01=build-01-sa
+GCP_SA_NAME_02=build-02-sa
