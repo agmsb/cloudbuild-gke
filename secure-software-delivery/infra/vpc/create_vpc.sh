@@ -1,3 +1,5 @@
+# GKE VPC
+
 gcloud compute networks create $VPC_NAME \
     --project=$PROJECT_ID \
     --subnet-mode=custom
@@ -9,6 +11,8 @@ gcloud compute networks subnets create $CLUSTER_SUBNET_NAME \
     --range=10.4.0.0/22 \
     --secondary-range=pod-net=10.0.0.0/14,svc-net=10.4.4.0/22
 
+
+# Private Pool VPC
 gcloud compute networks create $PRIVATE_POOL_VPC_NAME \
     --project=$PROJECT_ID \
     --subnet-mode=custom

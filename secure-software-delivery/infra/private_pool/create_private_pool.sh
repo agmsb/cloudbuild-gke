@@ -9,3 +9,8 @@ privatePoolV1Config:
 EOF
 
 gcloud builds worker-pools create $PRIVATE_POOL_NAME --config-from-file private-pool.yaml --region $REGION
+
+gcloud container clusters update $CLUSTER_NAME \
+    --enable-master-authorized-networks \
+    --region=$REGION \
+    --master-authorized-networks=PRIVATE_POOL_NETWORK/PRIVATE_POOL_PREFIX
