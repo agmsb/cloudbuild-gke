@@ -3,7 +3,7 @@ import os
 import random
 
 app = Flask(__name__)
-version = '1.0.1'
+version = 'team_1'
 
 
 products = ['BigQuery', 

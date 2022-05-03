@@ -1,3 +1,5 @@
+source variables.sh
+
 cat << EOF > policy.yaml
     globalPolicyEvaluationMode: ENABLE
     defaultAdmissionRule:

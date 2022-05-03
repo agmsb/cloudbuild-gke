@@ -12,6 +12,7 @@ CLUSTER_VPC_NAME=cluster-vpc
 CLUSTER_SUBNET_NAME=cluster-vpc-subnet-01
 CLUSTER_CONTROL_PLANE_CIDR=172.16.0.32/28
 PRIVATE_POOL_VPC_NAME=private-pool-vpc
+PRIVATE_POOLS_IP_RANGE_NAME=private-pool-ip-range
 
 # Private pool variables
 PRIVATE_POOL_NAME=private-pool

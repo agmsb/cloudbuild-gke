@@ -7,3 +7,5 @@ privatePoolV1Config:
     machineType: e2-standard-32
     diskSizeGb: 100
 EOF
+
+gcloud builds worker-pools create $PRIVATE_POOL_NAME --config-from-file privatepool.yaml --region $REGION

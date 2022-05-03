@@ -1,3 +1,4 @@
+source variables.sh
 source ./secrets/create_secret.sh
 source ./iam/create_iam.sh
 source ./vpc/create_vpc.sh
