@@ -1,0 +1,15 @@
+gcloud container clusters create $CLUSTER_NAME \
+    --project=$PROJECT_ID \
+    --cluster-version=$CLUSTER_VERSION \
+    --enable-ip-alias \
+    --network=$CLUSTER_VPC_NAME \
+    --subnetwork=$CLUSTER_SUBNET_NAME \
+    --cluster-secondary-range-name=pod-net \
+    --services-secondary-range-name=svc-net \
+    --region=$REGION \
+    --num-nodes=3 \
+    --enable-binauthz \
+    --enable-intra-node-visibility \
+    --enable-private-nodes \
+    --enable-private-endpoint \
+    --master-ipv4-cidr=$CLUSTER_CONTROL_PLANE_CIDR
