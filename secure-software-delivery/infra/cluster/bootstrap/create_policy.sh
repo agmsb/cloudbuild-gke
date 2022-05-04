@@ -1,4 +1,4 @@
-source variables.sh
+source ../../variables.sh
 
 cat << EOF > policy.yaml
     globalPolicyEvaluationMode: ENABLE
