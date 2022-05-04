@@ -13,4 +13,4 @@ gcloud builds worker-pools create $PRIVATE_POOL_NAME --config-from-file private-
 gcloud container clusters update $CLUSTER_NAME \
     --enable-master-authorized-networks \
     --region=$REGION \
-    --master-authorized-networks=PRIVATE_POOL_NETWORK/PRIVATE_POOL_PREFIX
+    --master-authorized-networks=$PRIVATE_POOLS_IP_RANGE/$PRIVATE_POOL_IP_RANGE_SIZE

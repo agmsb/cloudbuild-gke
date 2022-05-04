@@ -136,13 +136,13 @@ gcloud compute routers update-bgp-peer $ROUTER_NAME_01 \
     --peer-name=$PEER_NAME_GW01_IF0 \
     --region=$REGION \
     --advertisement-mode=CUSTOM \
-    --set-advertisement-ranges=$PRIVATE_POOL_VPC_NAME/$PRIVATE_POOLS_IP_RANGE_NAME
+    --set-advertisement-ranges=$PRIVATE_POOL_VPC_NAME/$PRIVATE_POOLS_IP_RANGE
 
 gcloud compute routers update-bgp-peer $ROUTER_NAME_01 \
     --peer-name=$PEER_NAME_GW01_IF1 \
     --region=$REGION \
     --advertisement-mode=CUSTOM \
-    --set-advertisement-ranges=$PRIVATE_POOL_VPC_NAME/$PRIVATE_POOLS_IP_RANGE_NAME
+    --set-advertisement-ranges=$PRIVATE_POOL_VPC_NAME/$PRIVATE_POOLS_IP_RANGE
 
 gcloud compute routers update-bgp-peer $ROUTER_NAME_02 \
     --peer-name=$PEER_NAME_GW02_IF0 \
