@@ -22,7 +22,7 @@ gcloud compute networks create $PRIVATE_POOL_VPC_NAME \
       --addresses=$PRIVATE_POOL_IP_RANGE \
       --purpose=VPC_PEERING \
       --prefix-length=$PRIVATE_POOL_IP_RANGE_SIZE \
-      --network=$VPC_NAME
+      --network=$PRIVATE_POOL_VPC_NAME
 
 gcloud services vpc-peerings connect \
     --service=servicenetworking.googleapis.com \
