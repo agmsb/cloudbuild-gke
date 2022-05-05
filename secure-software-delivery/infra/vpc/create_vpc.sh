@@ -1,6 +1,6 @@
 # GKE VPC
 
-gcloud compute networks create $VPC_NAME \
+gcloud compute networks create $CLUSTER_VPC_NAME \
     --project=$PROJECT_ID \
     --subnet-mode=custom
 
@@ -19,7 +19,7 @@ gcloud compute networks create $PRIVATE_POOL_VPC_NAME \
 
  gcloud compute addresses create $PRIVATE_POOLS_IP_RANGE_NAME \
       --global \
-      --addresses=$PRIVATE_POOL_IP_RANGE
+      --addresses=$PRIVATE_POOL_IP_RANGE \
       --purpose=VPC_PEERING \
       --prefix-length=$PRIVATE_POOL_IP_RANGE_SIZE \
       --network=$VPC_NAME
