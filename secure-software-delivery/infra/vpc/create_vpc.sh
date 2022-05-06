@@ -17,7 +17,7 @@ gcloud compute networks create $PRIVATE_POOL_VPC_NAME \
     --project=$PROJECT_ID \
     --subnet-mode=custom
 
- gcloud compute addresses create $PRIVATE_POOLS_IP_RANGE_NAME \
+ gcloud compute addresses create $PRIVATE_POOL_IP_RANGE_NAME \
       --global \
       --addresses=$PRIVATE_POOL_IP_RANGE \
       --purpose=VPC_PEERING \
@@ -26,6 +26,11 @@ gcloud compute networks create $PRIVATE_POOL_VPC_NAME \
 
 gcloud services vpc-peerings connect \
     --service=servicenetworking.googleapis.com \
-    --ranges=$PRIVATE_POOLS_IP_RANGE_NAME \
+    --ranges=$PRIVATE_POOL_IP_RANGE_NAME \
     --network=$PRIVATE_POOL_VPC_NAME \
     --project=$PROJECT_ID
+
+gcloud compute networks peerings update servicenetworking-googleapis-com \
+    --network=$PRIVATE_POOL_VPC_NAME \
+    --export-custom-routes \
+    --no-export-subnet-routes-with-public-ip

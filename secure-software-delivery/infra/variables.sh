@@ -12,9 +12,9 @@ CLUSTER_VPC_NAME=cluster-vpc
 CLUSTER_SUBNET_NAME=cluster-vpc-subnet-01
 CLUSTER_CONTROL_PLANE_CIDR=172.16.0.32/28
 PRIVATE_POOL_VPC_NAME=private-pool-vpc
-PRIVATE_POOLS_IP_RANGE_NAME=private-pool-ip-range
-PRIVATE_POOL_IP_RANGE=192.168.0.0
-PRIVATE_POOL_IP_RANGE_SIZE=24
+PRIVATE_POOL_IP_RANGE_NAME=private-pool-ip-range
+PRIVATE_POOL_IP_RANGE=10.195.64.0
+PRIVATE_POOL_IP_RANGE_SIZE=20
 
 # VPN variables
 GW_NAME_01=gateway-01
@@ -26,7 +26,6 @@ TUNNEL_NAME_GW01_IF1=tunnel-gw01-if1
 TUNNEL_NAME_GW02_IF0=tunnel-gw02-if0
 TUNNEL_NAME_GW02_IF1=tunnel-gw02-if1
 
-
 # Private pool variables
 PRIVATE_POOL_NAME=private-pool
 
@@ -36,3 +35,6 @@ GCP_SA_NAME_02=build-02-sa
 
 # Secrets Manager variables
 SECRET_NAME=secret-01
+
+# Binauthz variables
+ATTESTOR_ID=built-by-cloud-build

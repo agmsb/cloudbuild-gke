@@ -65,15 +65,15 @@ gcloud compute vpn-tunnels create $TUNNEL_NAME_GW02_IF1 \
 
 # Create BGP sessions
 
-ROUTER_01_INTERFACE_NAME_0=${ROUTER_NAME_01}_INTERFACE_0
-ROUTER_01_INTERFACE_NAME_1=${ROUTER_NAME_01}_INTERFACE_1
-ROUTER_02_INTERFACE_NAME_0=${ROUTER_NAME_02}_INTERFACE_0
-ROUTER_01_INTERFACE_NAME_1=${ROUTER_NAME_02}_INTERFACE_1
+ROUTER_01_INTERFACE_NAME_0=${ROUTER_NAME_01}-if0
+ROUTER_01_INTERFACE_NAME_1=${ROUTER_NAME_01}-if1
+ROUTER_02_INTERFACE_NAME_0=${ROUTER_NAME_02}-if0
+ROUTER_02_INTERFACE_NAME_1=${ROUTER_NAME_02}-if1
 
-PEER_NAME_GW01_IF0=${TUNNEL_NAME_GW01}_IF0_PEER
-PEER_NAME_GW01_IF1=${TUNNEL_NAME_GW01}_IF1_PEER
-PEER_NAME_GW02_IF0=${TUNNEL_NAME_GW02}_IF0_PEER
-PEER_NAME_GW02_IF1=${TUNNEL_NAME_GW02}_IF1_PEER
+PEER_NAME_GW01_IF0=${TUNNEL_NAME_GW01_IF0}-if0-peer
+PEER_NAME_GW01_IF1=${TUNNEL_NAME_GW01_IF1}-if1-peer
+PEER_NAME_GW02_IF0=${TUNNEL_NAME_GW02_IF0}-if0-peer
+PEER_NAME_GW02_IF1=${TUNNEL_NAME_GW02_IF1}-if1-peer
 
 
 gcloud compute routers add-interface $ROUTER_NAME_01 \
@@ -85,7 +85,7 @@ gcloud compute routers add-interface $ROUTER_NAME_01 \
 
 gcloud compute routers add-bgp-peer $ROUTER_NAME_01 \
     --peer-name=$PEER_NAME_GW01_IF0 \
-    --interface=$ROUTER_01_INTERFACE_NAME_0 \
+    --interface=$ROUTER_01_INTERFACE_NAME_1 \
     --peer-ip-address=169.254.0.2 \
     --peer-asn=65002 \
     --region=$REGION
@@ -136,13 +136,14 @@ gcloud compute routers update-bgp-peer $ROUTER_NAME_01 \
     --peer-name=$PEER_NAME_GW01_IF0 \
     --region=$REGION \
     --advertisement-mode=CUSTOM \
-    --set-advertisement-ranges=$PRIVATE_POOL_VPC_NAME/$PRIVATE_POOLS_IP_RANGE
+    --set-advertisement-ranges=$PRIVATE_POOLS_IP_RANGE/$PRIVATE_POOL_IP_RANGE_SIZE
 
+# pick up here 
 gcloud compute routers update-bgp-peer $ROUTER_NAME_01 \
     --peer-name=$PEER_NAME_GW01_IF1 \
     --region=$REGION \
     --advertisement-mode=CUSTOM \
-    --set-advertisement-ranges=$PRIVATE_POOL_VPC_NAME/$PRIVATE_POOLS_IP_RANGE
+    --set-advertisement-ranges=$PRIVATE_POOLS_IP_RANGE/$PRIVATE_POOL_IP_RANGE_SIZE
 
 gcloud compute routers update-bgp-peer $ROUTER_NAME_02 \
     --peer-name=$PEER_NAME_GW02_IF0 \
