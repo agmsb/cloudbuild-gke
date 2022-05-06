@@ -1,3 +1,5 @@
+source ../variables.sh
+
 gcloud iam service-accounts create $GCP_SA_NAME_01 \
   --display-name=$GCP_SA_NAME_01
 
