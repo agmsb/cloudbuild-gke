@@ -3,6 +3,7 @@ source ../variables.sh
 cat > private-pool.yaml <<EOF
 privatePoolV1Config:
   networkConfig:
+    egressOption: NO_PUBLIC_EGRESS
     peeredNetwork: projects/$PROJECT_ID/global/networks/$PRIVATE_POOL_VPC_NAME
   workerConfig:
     machineType: e2-standard-32

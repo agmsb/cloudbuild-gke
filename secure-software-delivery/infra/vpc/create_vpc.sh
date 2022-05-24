@@ -17,6 +17,12 @@ gcloud compute networks create $PRIVATE_POOL_VPC_NAME \
     --project=$PROJECT_ID \
     --subnet-mode=custom
 
+gcloud compute networks subnets create $PRIVATE_POOL_SUBNET_NAME \
+    --project=$PROJECT_ID \
+    --region=$REGION \
+    --network=$PRIVATE_POOL_VPC_NAME \
+    --range=10.206.0.0/20	
+
  gcloud compute addresses create $PRIVATE_POOL_IP_RANGE_NAME \
       --global \
       --addresses=$PRIVATE_POOL_IP_RANGE \
