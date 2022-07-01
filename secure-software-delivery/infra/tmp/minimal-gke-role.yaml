@@ -1,0 +1,8 @@
+title: minimal-gke 
+description: Gets credentials only, RBAC for authz. 
+stage: GA 
+includedPermissions: 
+- container.apiServices.get 
+- container.apiServices.list 
+- container.clusters.get 
+- container.clusters.getCredentials

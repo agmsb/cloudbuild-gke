@@ -1,0 +1,21 @@
+steps:
+  - name: gcr.io/cloud-builders/gcloud
+    id: Bootstrap GKE cluster
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        gcloud container clusters get-credentials cluster --region us-central1 --project agmsb-lab
+        kubectl create ns team-a
+        kubectl create ns team-b
+        kubectl create serviceaccount team-a-sa --namespace team-a
+        kubectl create serviceaccount team-b-sa --namespace team-b
+        kubectl annotate serviceaccount team-a-sa --namespace team-a iam.gke.io/gcp-service-account=build-01-sa@agmsb-lab.iam.gserviceaccount.com
+        kubectl annotate serviceaccount team-b-sa --namespace team-b iam.gke.io/gcp-service-account=build-02-sa@agmsb-lab.iam.gserviceaccount.com
+        kubectl create role team-a-admin --verb=get,list,watch,create,update,patch,delete --resource=deployments.apps,services --namespace=team-a
+        kubectl create role team-b-admin --verb=get,list,watch,create,update,patch,delete --resource=deployments.apps,services --namespace=team-a
+        kubectl create rolebinding team-a-gcp-sa-binding --role=team-a-admin --user=build-01-sa@agmsb-lab.iam.gserviceaccount.com --namespace=team-a
+        kubectl create rolebinding team-b-gcp-sa-binding --role=team-b-admin --user=build-02-sa@agmsb-lab.iam.gserviceaccount.com --namespace=team-b
+        kubectl describe rolebindings -n team-a
+options:
+  workerPool: 'projects/694498354003/locations/us-central1/workerPools/private-pool'
