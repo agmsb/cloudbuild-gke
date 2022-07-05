@@ -208,7 +208,7 @@ options:
   workerPool: 'projects/$PROJECT_NUM/locations/$REGION/workerPools/$PRIVATE_POOL_NAME'
 EOF
  
-$ gcloud builds submit . –config=infra/bootstrap-cluster.yaml
+$ gcloud builds submit . --config=infra/bootstrap-cluster.yaml
 ```
 
 ## Validate bootstrap
