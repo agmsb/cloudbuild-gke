@@ -380,5 +380,5 @@ $ cat << EOF > tmp/policy.yaml
       - projects/${PROJECT_ID}/attestors/${ATTESTOR_ID}
 EOF
 
-$ gcloud container binauthz policy import policy.yaml
+$ gcloud container binauthz policy import tmp/policy.yaml
 ```
