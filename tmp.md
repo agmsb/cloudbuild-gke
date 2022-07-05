@@ -95,14 +95,14 @@ $ gcloud compute routers update-bgp-peer ${CLUSTER_ROUTER} \
 
 ## Create Cloud Build private pool
 ```
-$ cat > infra/private-pool.yaml <<EOF 
-privatePoolV1Config: 
-  networkConfig: 
-        # egressOption: NO_PUBLIC_EGRESS 
-        peeredNetwork: projects/$PROJECT_ID/global/networks/$PRIVATE_POOL_VPC_NAME 
-  workerConfig: 
-        machineType: e2-standard-2 
-        diskSizeGb: 100 
+$ cat > infra/private-pool.yaml <<EOF
+privatePoolV1Config:
+  networkConfig:
+        # egressOption: NO_PUBLIC_EGRESS
+        peeredNetwork: projects/$PROJECT_ID/global/networks/$PRIVATE_POOL_VPC_NAME
+  workerConfig:
+        machineType: e2-standard-2
+        diskSizeGb: 100
 EOF
 
 $ gcloud builds worker-pools create $PRIVATE_POOL_NAME --config-from-file infra/private-pool.yaml --region $REGION
