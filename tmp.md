@@ -1,12 +1,17 @@
-Creating your target infrastructure 
+# Creating your target infrastructure 
 
+## Create VPCs and VPN
+```
 $ source infra/variables.sh
 $ cd infra/vpc
 $ terraform init
 $ terraform plan
 $ terraform apply
 $ cd ../..
- 
+```
+
+## Create GKE cluster
+``` 
 $ gcloud container clusters create $CLUSTER_NAME \
 	--project=$PROJECT_ID \
 	--cluster-version=$CLUSTER_VERSION \
@@ -22,18 +27,22 @@ $ gcloud container clusters create $CLUSTER_NAME \
 	--master-ipv4-cidr=$CLUSTER_CONTROL_PLANE_CIDR \
    	--workload-pool=$PROJECT_ID.svc.id.goog \
 	--enable-binauthz
+```
 
-
+## Create VPC peering for GKE control plane
+```
 $ export GKE_PEERING_NAME=$(gcloud container clusters describe $CLUSTER_NAME \
     --region=$REGION \
     --format='value(privateClusterConfig.peeringName)')
-
 
 $ gcloud compute networks peerings update $GKE_PEERING_NAME \
     --network=$CLUSTER_VPC_NAME \
     --export-custom-routes \
     --no-export-subnet-routes-with-public-ip
+```
 
+## Setup networking for Cloud Build private pool
+```
 $ gcloud compute addresses create $PRIVATE_POOL_IP_RANGE_NAME \
       --global \
       --addresses=$PRIVATE_POOL_IP_RANGE \
@@ -52,7 +61,11 @@ $ gcloud compute networks peerings update servicenetworking-googleapis-com \
     --network=$PRIVATE_POOL_VPC_NAME \
     --export-custom-routes \
     --no-export-subnet-routes-with-public-ip
- 
+```
+
+## Advertise ranges for private pool and GKE control plane
+
+```
 $ gcloud compute routers update-bgp-peer ${PRIVATE_POOL_ROUTER} \
     --peer-name=$PRIVATE_POOL_ROUTER_PEER_0 \
     --region=${REGION} \
@@ -76,8 +89,12 @@ $ gcloud compute routers update-bgp-peer ${CLUSTER_ROUTER} \
     --region=${REGION} \
     --advertisement-mode=CUSTOM \
     --set-advertisement-ranges=$CLUSTER_CONTROL_PLANE_CIDR
-Securing build and deployment infrastructure
- 
+```
+
+# Securing build and deployment infrastructure
+
+## Create Cloud Build private pool
+```
 $ cat > infra/private-pool.yaml <<EOF 
 privatePoolV1Config: 
   networkConfig: 
@@ -88,15 +105,21 @@ privatePoolV1Config:
         diskSizeGb: 100 
 EOF
 
-
 $ gcloud builds worker-pools create $PRIVATE_POOL_NAME --config-from-file infra/private-pool.yaml --region $REGION
- 
+ ```
+
+## Create allowlist for private pool to access GKE control plane
+```
 $ gcloud container clusters update $CLUSTER_NAME \
 	--enable-master-authorized-networks \
 	--region=$REGION \
 --master-authorized-networks=$PRIVATE_POOL_IP_RANGE/$PRIVATE_POOL_IP_RANGE_SIZE
-Applying the principle of least privilege to builds 
- 
+```
+
+# Applying the principle of least privilege to builds 
+
+Create GCP Service Acounts and Artifact Registry repositories
+```
 $ gcloud iam service-accounts create $GCP_SA_NAME_01 \
   --display-name=$GCP_SA_NAME_01
  
@@ -114,7 +137,9 @@ $ gcloud artifacts repositories create $REPOSITORY_B \
      --location=$REGION
  
 $ gcloud artifacts repositories add-iam-policy-binding team-b-repository --location $REGION --member="serviceAccount:${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com" --role=roles/artifactregistry.writer
- 
+```
+## Create GKE custom IAM role
+```
 $ cat << EOF > tmp/minimal-gke-role.yaml 
 title: minimal-gke 
 description: Gets credentials only, RBAC for authz. 
@@ -127,8 +152,12 @@ includedPermissions:
 EOF
 
 $ gcloud iam roles create minimal_gke_role --project=$PROJECT_ID\
-  --file=infra/minimal-gke-role.yaml
- 
+  --file=tmp/minimal-gke-role.yaml
+```
+
+## Create GCP SA role bindings
+
+```
 $ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 --member="serviceAccount:${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com" \
 --role=project/$PROJECT_ID/roles/minimal_gke_role 
@@ -156,7 +185,10 @@ $ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 $ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 --member="serviceAccount:${GCP_SA_GCB_DEFAULT}" \
 --role=roles/container.admin
- 
+ ```
+
+## Bootstrap GKE cluster
+```
 $ cat << EOF > infra/bootstrap-cluster.yaml
 steps:
   - name: gcr.io/cloud-builders/gcloud
@@ -177,7 +209,10 @@ options:
 EOF
  
 $ gcloud builds submit . –config=infra/bootstrap-cluster.yaml
- 
+```
+
+## Validate bootstrap
+```
 $ cat << EOF > tmp/test-build-a.yaml
 steps:
   - name: gcr.io/cloud-builders/gcloud
@@ -194,7 +229,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
 EOF
  
-$ gcloud builds submit . --config=infra/test-build-a.yaml
+$ gcloud builds submit . --config=tmp/test-build-a.yaml
  
 Output should be similar to:
  
@@ -219,7 +254,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
 EOF
  
-$ gcloud builds submit . --config=infra/test-build-b.yaml
+$ gcloud builds submit . --config=tmp/test-build-b.yaml
  
 Output should be similar to:
  
@@ -227,8 +262,12 @@ Output should be similar to:
 
 
 >2022-07-01T15:02:23.625289198Z Error from server (Forbidden): deployments.apps is forbidden: User "build-02-sa@agmsb-lab.iam.gserviceaccount.com" cannot list resource "deployments" in API group "apps" in the namespace "team-a": requires one of ["container.deployments.list"] permission(s).
- 
-Configuring release management 
+```
+
+# Configuring release management 
+
+## Set up `gh` CLI
+```
 Replace $GH_USERNAME with your GitHub username that you will be using. 
  
 $ source infra/variables.sh
@@ -248,11 +287,17 @@ $ cp ../repos/team_b .
 $ git add .
 $ git commit –m “Copy over example repo.” 
 $ git push --set-upstream origin HEAD
- 
+```
+
+## Connect GH repositories
+```
 Follow the instructions here: https://cloud.google.com/build/docs/automating-builds/build-repos-from-github#installing_gcb_app
  
 Ensure that you are selecting the "Only select repositories" option when installing the Cloud Build app. Repeat the following for the team-b repository. 
- 
+```
+
+## Create Cloud Build triggers
+```
 $ gcloud beta builds triggers create github\
 --name=team-a \
 --region=$REGION \
@@ -270,7 +315,10 @@ $ gcloud beta builds triggers create github\
 --branch-pattern=main --build-config=cloudbuild.yaml \
 --service-account=projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com \
 --require-approval
- 
+```
+
+## Create Cloud Build build configs
+```
 $ cat << EOF > repos/team_a/cloudbuild.yaml
 steps:
   - name: gcr.io/cloud-builders/docker
@@ -310,13 +358,19 @@ options:
   logging: CLOUD_LOGGING_ONLY
 images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app]
 EOF
- 
+```
+
+## Test build config
+```
 $ cd repos/team_a
  
 $ gcloud config builds submit . --config=cloudbuild.yaml
+```
 
-Enabling verifiable trust in artifacts from builds
+# Enabling verifiable trust in artifacts from builds
 
+## Create GKE binary authorization policy
+```
 $ cat << EOF > tmp/policy.yaml
     globalPolicyEvaluationMode: ENABLE
     defaultAdmissionRule:
@@ -327,3 +381,4 @@ $ cat << EOF > tmp/policy.yaml
 EOF
 
 $ gcloud container binauthz policy import policy.yaml
+```
