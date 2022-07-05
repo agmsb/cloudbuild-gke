@@ -1,7 +1,0 @@
-privatePoolV1Config: 
-  networkConfig: 
-        # egressOption: NO_PUBLIC_EGRESS 
-        peeredNetwork: projects/agmsb-lab/global/networks/network2 
-  workerConfig: 
-        machineType: e2-standard-2 
-        diskSizeGb: 100 

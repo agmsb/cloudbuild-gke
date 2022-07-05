@@ -1,0 +1,18 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: Build container image
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/agmsb-lab/team-a-repository/team-a-app',  '.']
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: Get kubeconfig and apply manifests
+    entrypoint: sh
+    args:
+      - '-c'
+      - |
+        gcloud container clusters get-credentials cluster --region us-central1 --project agmsb-lab
+        kubectl delete -f k8s.yaml -n team-a
+        kubectl apply -f k8s.yaml -n team-a
+serviceAccount: 'projects/agmsb-lab/serviceAccounts/build-01-sa@agmsb-lab.iam.gserviceaccount.com'
+options:
+  workerPool: 'projects/694498354003/locations/us-central1/workerPools/private-pool'
+  logging: CLOUD_LOGGING_ONLY
+images: [us-central1-docker.pkg.dev/agmsb-lab/team-a-repository/team-a-app]

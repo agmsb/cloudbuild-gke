@@ -1,3 +1,0 @@
-source ../variables.sh
-
-gh
