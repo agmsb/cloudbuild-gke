@@ -315,10 +315,49 @@ Follow the instructions here: https://cloud.google.com/build/docs/automating-bui
  
 Ensure that you are selecting the "Only select repositories" option when installing the Cloud Build app. Repeat the following for the team-b repository. 
 ```
-
-## Validate app
+## Create Cloud Build triggers
 ```
-$ cat << EOF > bin/$GH_A/build-app-a.yaml
+$ gcloud beta builds triggers create github \
+--name=team-a-build \
+--region=$REGION \
+--repo-name=$GH_A \
+--repo-owner=$GH_USERNAME \
+--pull-request-pattern=master --build-config=build-a.yaml \
+--service-account=projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com \
+--require-approval 
+ 
+$ gcloud beta builds triggers create github \
+--name=team-b-build \
+--region=$REGION \
+--repo-name=$GH_B \
+--repo-owner=$GH_USERNAME \
+--pull-request-pattern=master --build-config=build-b.yaml \
+--service-account=projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com \
+--require-approval
+
+$ gcloud beta builds triggers create github \
+--name=team-a-deploy \
+--region=$REGION \
+--repo-name=$GH_A \
+--repo-owner=$GH_USERNAME \
+--branch-pattern=master --build-config=deploy-a.yaml \
+--service-account=projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com \
+--require-approval 
+
+gcloud beta builds triggers create github \
+--name=team-b-deploy \
+--region=$REGION \
+--repo-name=$GH_B\
+--repo-owner=$GH_USERNAME \
+--branch-pattern=master --build-config=deploy-b.yaml \
+--service-account=projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com \
+--require-approval 
+```
+
+
+## Create Cloud Build build configs
+```
+$ cat << EOF > bin/$GH_A/build-a.yaml
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build container image
@@ -333,7 +372,7 @@ images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:v1]
 
 $ gcloud builds submit . --config=build-app-a.yaml
 
-$ cat << EOF > bin/build-app-b.yaml
+$ cat << EOF > bin/build-b.yaml
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build container image
@@ -349,34 +388,10 @@ images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app:v1]
 $ gcloud builds submit . --config=build-app-b.yaml
 ```
 
-## Create Cloud Build triggers
+## Create Cloud Build deploy configs
 ```
-$ gcloud beta builds triggers create github \
---name=team-a \
---region=$REGION \
---repo-name=$GH_A \
---repo-owner=$GH_USERNAME \
---branch-pattern=master --build-config=cloudbuild.yaml \
---service-account=projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com \
---require-approval 
- 
-$ gcloud beta builds triggers create github \
---name=team-b \
---region=$REGION \
---repo-name=$GH_B \
---repo-owner=$GH_USERNAME \
---branch-pattern=master --build-config=cloudbuild.yaml \
---service-account=projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com \
---require-approval
-```
-
-## Create Cloud Build build configs
-```
-$ cat << EOF > bin/$GH_A/cloudbuild.yaml
+$ cat << EOF > bin/$GH_A/deploy-a.yaml
 steps:
-  - name: gcr.io/cloud-builders/docker
-    id: Build container image
-    args: ['build', '-t', '${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:v1',  '.']
   - name: gcr.io/cloud-builders/gke-deploy
     id: Prep k8s manifests
     args:
@@ -394,13 +409,11 @@ steps:
         kubectl apply -f output/expanded/aggregated-resources.yaml -n $NAMESPACE_01
 serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com'
 options:
-  requestedVerifyOption: VERIFIED
   workerPool: 'projects/$PROJECT_NUM/locations/$REGION/workerPools/$PRIVATE_POOL_NAME'
   logging: CLOUD_LOGGING_ONLY
-images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:v1]
 EOF
 
-$ cat << EOF > bin/$GH_B/cloudbuild.yaml
+$ cat << EOF > bin/$GH_B/deploy-b.yaml
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build container image
@@ -429,16 +442,11 @@ images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app:v1]
 EOF
 ```
 
-## Test build config
-```
-$ cd bin/$GH_A
- 
-$ gcloud builds submit . --config=cloudbuild.yaml
-```
-
 ## Test triggers
 ```
 $ cd bin/$GH_A
+$ git branch test
+$ git checkout test
 $ git add .
 $ git commit -m "Add Cloud Build YAML."
 $ git push --set-upstream origin HEAD
