@@ -7,8 +7,13 @@ $ git clone https://github.com/agmsb/cloudbuild-gke.git && cd cloudbuild-gke/08
 
 ## Enable the needed Google Cloud APIs
 ```
+# Set to the project you will be working with. 
+$ gcloud config set project <replace-with-your-project-id>
+
+# Replace $GH_USERNAME with your GitHub username that you will be using in bin/variables.sh.
+
 $ source bin/variables.sh
-$ gcloud services enable container.googleapis.com cloudbuild.googleapis.com secretmanager.googleapis.com artifactregistry.googleapis.com binaryauthorization.googleapis.com
+$ gcloud services enable container.googleapis.com cloudbuild.googleapis.com secretmanager.googleapis.com artifactregistry.googleapis.com binaryauthorization.googleapis.com servicenetworking.googleapis.com containeranalysis.googleapis.com
 ```
 
 ## Create VPCs and VPN
@@ -17,6 +22,8 @@ $ cd infra/vpc
 $ terraform init
 $ terraform plan
 $ terraform apply
+# Type 'yes' to move forward with creating the resources. 
+
 $ cd ../..
 ```
 
@@ -80,13 +87,13 @@ $ gcloud compute routers update-bgp-peer ${PRIVATE_POOL_ROUTER} \
     --peer-name=$PRIVATE_POOL_ROUTER_PEER_0 \
     --region=${REGION} \
     --advertisement-mode=CUSTOM \
-    --set-advertisement-ranges=${PRIVATE_POOL_RANGE}/${PRIVATE_POOL_RANGE_SIZE}
+    --set-advertisement-ranges=${PRIVATE_POOL_IP_RANGE}/${PRIVATE_POOL_IP_RANGE_SIZE}
  
 $ gcloud compute routers update-bgp-peer ${PRIVATE_POOL_ROUTER} \
     --peer-name=$PRIVATE_POOL_ROUTER_PEER_1 \
     --region=${REGION} \
     --advertisement-mode=CUSTOM \
-    --set-advertisement-ranges=${PRIVATE_POOL_RANGE}/${PRIVATE_POOL_RANGE_SIZE}
+    --set-advertisement-ranges=${PRIVATE_POOL_IP_RANGE}/${PRIVATE_POOL_IP_RANGE_SIZE}
  
 $ gcloud compute routers update-bgp-peer ${CLUSTER_ROUTER} \
     --peer-name=${CLUSTER_ROUTER_PEER_0} \
@@ -170,7 +177,7 @@ $ gcloud iam roles create minimal_gke_role --project=$PROJECT_ID\
 ```
 $ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 --member="serviceAccount:${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com" \
---role=project/$PROJECT_ID/roles/minimal_gke_role 
+--role=projects/$PROJECT_ID/roles/minimal_gke_role 
  
 $ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 --member="serviceAccount:${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com" \
@@ -182,7 +189,7 @@ $ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
  
 $ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 --member="serviceAccount:${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com" \
---role=project/$PROJECT_ID/roles/minimal_gke_role
+--role=projects/$PROJECT_ID/roles/minimal_gke_role
  
 $ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
 --member="serviceAccount:${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com" \
@@ -231,17 +238,18 @@ steps:
     args:
       - '-c'
       - |
+        gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
         kubectl get deployments -n $NAMESPACE_01
         kubectl get deployments -n $NAMESPACE_02
 serviceAccount: 'projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com'
 options:
-  workerPool: 'projects/694498354003/locations/$REGION/workerPools/private-pool'
+  workerPool: 'projects/$PROJECT_NUM/locations/$REGION/workerPools/private-pool'
   logging: CLOUD_LOGGING_ONLY
 EOF
  
 $ gcloud builds submit . --config=bin/test-build-a.yaml
  
-Output should be similar to:
+Visit your Cloud Build logs in your Cloud Build console. Output should be similar to:
  
 >2022-07-01T15:02:23.226364190Z No resources found in team-a namespace.
 
@@ -256,6 +264,7 @@ steps:
     args:
       - '-c'
       - |
+        gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
         kubectl get deployments -n $NAMESPACE_02
         kubectl get deployments -n $NAMESPACE_01
 serviceAccount: 'projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com'
@@ -266,7 +275,7 @@ EOF
  
 $ gcloud builds submit . --config=bin/test-build-b.yaml
  
-Output should be similar to:
+Visit your Cloud Build logs in your Cloud Build console. Output should be similar to:
  
 >2022-07-01T15:02:23.226364190Z No resources found in team-b namespace.
 
@@ -278,27 +287,23 @@ Output should be similar to:
 
 ## Set up `gh` CLI
 ```
-Replace $GH_USERNAME with your GitHub username that you will be using. 
- 
-$ source bin/variables.sh
- 
 $ gh auth login 
- 
+
 $ cd bin
 $ gh repo create $GH_A --public
 $ gh repo clone $GH_A && cd $GH_A
-$ cp ../repo_templates/team-a . 
+$ cp -r ../../repo_templates/team_a/. . 
 $ git add .
-$ git commit –m “Copy over example repo.” 
+$ git commit -m "Copy over example repo."
 $ git push --set-upstream origin HEAD
 
 $ cd ..
  
 $ gh repo create $GH_B --public
 $ gh repo clone $GH_B && cd $GH_B
-$ cp ../repo_templates/team_b . 
+$ cp  -r ../../repo_templates/team_b/. . 
 $ git add .
-$ git commit –m “Copy over example repo.” 
+$ git commit -m "Copy over example repo." 
 $ git push --set-upstream origin HEAD
 
 $ cd ../..
@@ -311,34 +316,74 @@ Follow the instructions here: https://cloud.google.com/build/docs/automating-bui
 Ensure that you are selecting the "Only select repositories" option when installing the Cloud Build app. Repeat the following for the team-b repository. 
 ```
 
+## Validate app
+```
+$ cat << EOF > bin/$GH_A/build-app-a.yaml
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: Build container image
+    args: ['build', '-t', '${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:v1',  '.']
+images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:v1]
+serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com'
+options:
+  requestedVerifyOption: VERIFIED
+  workerPool: 'projects/$PROJECT_NUM/locations/$REGION/workerPools/$PRIVATE_POOL_NAME'
+  logging: CLOUD_LOGGING_ONLY
+images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:v1]
+
+$ gcloud builds submit . --config=build-app-a.yaml
+
+$ cat << EOF > bin/build-app-b.yaml
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: Build container image
+    args: ['build', '-t', '${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app:v1',  '.']
+images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app:v1]
+serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com'
+options:
+  requestedVerifyOption: VERIFIED
+  workerPool: 'projects/$PROJECT_NUM/locations/$REGION/workerPools/$PRIVATE_POOL_NAME'
+  logging: CLOUD_LOGGING_ONLY
+images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app:v1]
+
+$ gcloud builds submit . --config=build-app-b.yaml
+```
+
 ## Create Cloud Build triggers
 ```
-$ gcloud beta builds triggers create github\
+$ gcloud beta builds triggers create github \
 --name=team-a \
 --region=$REGION \
 --repo-name=$GH_A \
 --repo-owner=$GH_USERNAME \
---branch-pattern=main --build-config=cloudbuild.yaml \
+--branch-pattern=master --build-config=cloudbuild.yaml \
 --service-account=projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com \
 --require-approval 
  
-$ gcloud beta builds triggers create github\
+$ gcloud beta builds triggers create github \
 --name=team-b \
 --region=$REGION \
 --repo-name=$GH_B \
 --repo-owner=$GH_USERNAME \
---branch-pattern=main --build-config=cloudbuild.yaml \
+--branch-pattern=master --build-config=cloudbuild.yaml \
 --service-account=projects/$PROJECT_ID/serviceAccounts/${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com \
 --require-approval
 ```
 
 ## Create Cloud Build build configs
 ```
-$ cat << EOF > bin/team_a/cloudbuild.yaml
+$ cat << EOF > bin/$GH_A/cloudbuild.yaml
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build container image
-    args: ['build', '-t', '${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app',  '.']
+    args: ['build', '-t', '${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:v1',  '.']
+  - name: gcr.io/cloud-builders/gke-deploy
+    id: Prep k8s manifests
+    args:
+      - 'prepare'
+      - '--filename=k8s.yaml'
+      - '--image=${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:v1'
+      - '--version=v1'
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     id: Get kubeconfig and apply manifests
     entrypoint: sh
@@ -346,19 +391,27 @@ steps:
       - '-c'
       - |
         gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
-        kubectl apply -f k8s.yaml -n $NAMESPACE_01
+        kubectl apply -f output/expanded/aggregated-resources.yaml -n $NAMESPACE_01
 serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com'
 options:
+  requestedVerifyOption: VERIFIED
   workerPool: 'projects/$PROJECT_NUM/locations/$REGION/workerPools/$PRIVATE_POOL_NAME'
   logging: CLOUD_LOGGING_ONLY
-images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app]
+images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:v1]
 EOF
- 
-$ cat << EOF > bin/team_b/cloudbuild.yaml
+
+$ cat << EOF > bin/$GH_B/cloudbuild.yaml
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build container image
-    args: ['build', '-t', '${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app',  '.']
+    args: ['build', '-t', '${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app:v1',  '.']
+  - name: gcr.io/cloud-builders/gke-deploy
+    id: Prep k8s manifests
+    args:
+      - 'prepare'
+      - '--filename=k8s.yaml'
+      - '--image=${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-b-app:v1'
+      - '--version=v1'
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     id: Get kubeconfig and apply manifests
     entrypoint: sh
@@ -366,27 +419,46 @@ steps:
       - '-c'
       - |
         gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
-        kubectl apply -f k8s.yaml -n $NAMESPACE_02
+        kubectl apply -f output/expanded/aggregated-resources.yaml -n $NAMESPACE_02
 serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${GCP_SA_NAME_02}@${PROJECT_ID}.iam.gserviceaccount.com'
 options:
+  requestedVerifyOption: VERIFIED
   workerPool: 'projects/$PROJECT_NUM/locations/$REGION/workerPools/$PRIVATE_POOL_NAME'
   logging: CLOUD_LOGGING_ONLY
-images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app]
+images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_B/team-b-app:v1]
 EOF
 ```
 
 ## Test build config
 ```
-$ cd bin/team_a
+$ cd bin/$GH_A
  
-$ gcloud config builds submit . --config=cloudbuild.yaml
+$ gcloud builds submit . --config=cloudbuild.yaml
+```
+
+## Test triggers
+```
+$ cd bin/$GH_A
+$ git add .
+$ git commit -m "Add Cloud Build YAML."
+$ git push --set-upstream origin HEAD
+$ cd ../$GH_B
+
+$ git add .
+$ git commit -m "Add Cloud Build YAML."
+$ git push --set-upstream origin HEAD
+$ cd ../..
 ```
 
 # Enabling verifiable trust in artifacts from builds
 
 ## Create GKE binary authorization policy
 ```
-$ cat << EOF > tmp/policy.yaml
+$ gcloud artifacts docker images describe \
+$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSISTORY_A/team-a-app:latest \
+--show-provenance
+
+$ cat << EOF > infra/policy.yaml
 globalPolicyEvaluationMode: ENABLE
 defaultAdmissionRule:
     evaluationMode: REQUIRE_ATTESTATION
@@ -395,5 +467,58 @@ defaultAdmissionRule:
     - projects/${PROJECT_ID}/attestors/${ATTESTOR_ID}
 EOF
 
-$ gcloud container binauthz policy import tmp/policy.yaml
+$ gcloud container binauthz policy import infra/policy.yaml
+```
+
+## Test deploying an image out-of-band
+```
+
+$ gcloud auth configure-docker $REGION-docker.pkg.dev
+$ docker pull us-docker.pkg.dev/google-samples/containers/gke/hello-app:1.0
+$ docker tag us-docker.pkg.dev/google-samples/containers/gke/hello-app:1.0 $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/out-of-band-app:tag1 
+$ docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/out-of-band-app:tag1
+
+$ gcloud artifacts repositories add-iam-policy-binding $REPOSITORY_A \
+--location $REGION --member=user:$(gcloud config list account --format "value(core.account)") --role=roles/artifactregistry.admin
+
+$ cd bin
+$ mkdir out-of-band && cd out-of-band
+
+$ cat << EOF > k8s.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: out-of-band-app
+spec:
+  selector:
+    matchLabels:
+      app: out-of-band
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: out-of-band
+    spec:
+      containers:
+      - name: app
+        image: $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/quickstart-image@sha256:88b205d7995332e10e836514fbfd59ecaf8976fc15060cd66e85cdcebe7fb356
+        imagePullPolicy: Always
+EOF
+
+$ cat << EOF > cloudbuild.yaml
+steps:
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: Get kubeconfig and apply manifests
+    entrypoint: sh
+    args:
+      - '-c'
+      - |
+        gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
+        kubectl delete -f k8s.yaml -n $NAMESPACE_01
+        kubectl apply -f k8s.yaml -n $NAMESPACE_01
+serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com'
+options:
+  workerPool: 'projects/$PROJECT_NUM/locations/$REGION/workerPools/$PRIVATE_POOL_NAME'
+  logging: CLOUD_LOGGING_ONLY
+EOF
 ```

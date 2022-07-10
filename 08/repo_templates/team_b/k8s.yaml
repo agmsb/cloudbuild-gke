@@ -1,20 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: team-a-app
+  name: team-b-app
+  namespace: team-b
 spec:
   selector:
     matchLabels:
-      app: team-a
+      app: team-b
   replicas: 1
   template:
     metadata:
       labels:
-        app: team-a
+        app: team-b
     spec:
       containers:
       - name: app
-        image: us-central1-docker.pkg.dev/agmsb-lab/team-a-repository/team-a-app
+        image: us-central1-docker.pkg.dev/agmsb-lab/team-b-repository/team-b-app:v1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -22,10 +23,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: team-a-app
+  name: team-b-app
+  namespace: team-b
 spec:
   selector:
-    app: team-a
+    app: team-b
   ports:
   - name: app-port
     protocol: TCP
