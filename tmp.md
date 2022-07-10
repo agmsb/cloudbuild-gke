@@ -354,7 +354,6 @@ gcloud beta builds triggers create github \
 --require-approval 
 ```
 
-
 ## Create Cloud Build build configs
 ```
 $ cat << EOF > bin/$GH_A/build-a.yaml
