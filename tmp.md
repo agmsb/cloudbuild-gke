@@ -2,7 +2,7 @@
 
 ## Create VPCs and VPN
 ```
-$ source infra/variables.sh
+$ source bin/variables.sh
 $ cd infra/vpc
 $ terraform init
 $ terraform plan
@@ -140,7 +140,7 @@ $ gcloud artifacts repositories add-iam-policy-binding team-b-repository --locat
 ```
 ## Create GKE custom IAM role
 ```
-$ cat << EOF > tmp/minimal-gke-role.yaml 
+$ cat << EOF > infra/minimal-gke-role.yaml 
 title: minimal-gke 
 description: Gets credentials only, RBAC for authz. 
 stage: GA 
@@ -152,7 +152,7 @@ includedPermissions:
 EOF
 
 $ gcloud iam roles create minimal_gke_role --project=$PROJECT_ID\
-  --file=tmp/minimal-gke-role.yaml
+  --file=infra/minimal-gke-role.yaml
 ```
 
 ## Create GCP SA role bindings
@@ -213,7 +213,7 @@ $ gcloud builds submit . --config=infra/bootstrap-cluster.yaml
 
 ## Validate bootstrap
 ```
-$ cat << EOF > tmp/test-build-a.yaml
+$ cat << EOF > bin/test-build-a.yaml
 steps:
   - name: gcr.io/cloud-builders/gcloud
     id: Test GCP SA for Team A
@@ -229,7 +229,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
 EOF
  
-$ gcloud builds submit . --config=tmp/test-build-a.yaml
+$ gcloud builds submit . --config=bin/test-build-a.yaml
  
 Output should be similar to:
  
@@ -238,7 +238,7 @@ Output should be similar to:
 
 >2022-07-01T15:02:23.625289198Z Error from server (Forbidden): deployments.apps is forbidden: User "build-01-sa@agmsb-lab.iam.gserviceaccount.com" cannot list resource "deployments" in API group "apps" in the namespace "team-b": requires one of ["container.deployments.list"] permission(s).
  
-$ cat << EOF > tmp/test-build-b.yaml
+$ cat << EOF > bin/test-build-b.yaml
 steps:
   - name: gcr.io/cloud-builders/gcloud
     id: Test GCP SA for Team B
@@ -254,7 +254,7 @@ options:
   logging: CLOUD_LOGGING_ONLY
 EOF
  
-$ gcloud builds submit . --config=tmp/test-build-b.yaml
+$ gcloud builds submit . --config=bin/test-build-b.yaml
  
 Output should be similar to:
  
@@ -270,23 +270,28 @@ Output should be similar to:
 ```
 Replace $GH_USERNAME with your GitHub username that you will be using. 
  
-$ source infra/variables.sh
+$ source bin/variables.sh
  
 $ gh auth login 
  
+$ cd bin
 $ gh repo create $GH_A --public
 $ gh repo clone $GH_A && cd $GH_A
-$ cp ../repos/team-a . 
+$ cp ../repo_templates/team-a . 
 $ git add .
 $ git commit –m “Copy over example repo.” 
 $ git push --set-upstream origin HEAD
+
+$ cd ..
  
 $ gh repo create $GH_B --public
 $ gh repo clone $GH_B && cd $GH_B
-$ cp ../repos/team_b . 
+$ cp ../repo_templates/team_b . 
 $ git add .
 $ git commit –m “Copy over example repo.” 
 $ git push --set-upstream origin HEAD
+
+$ cd ../..
 ```
 
 ## Connect GH repositories
@@ -319,7 +324,7 @@ $ gcloud beta builds triggers create github\
 
 ## Create Cloud Build build configs
 ```
-$ cat << EOF > repos/team_a/cloudbuild.yaml
+$ cat << EOF > bin/team_a/cloudbuild.yaml
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build container image
@@ -339,7 +344,7 @@ options:
 images: [${REGION}-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app]
 EOF
  
-$ cat << EOF > repos/team_b/cloudbuild.yaml
+$ cat << EOF > bin/team_b/cloudbuild.yaml
 steps:
   - name: gcr.io/cloud-builders/docker
     id: Build container image
@@ -362,7 +367,7 @@ EOF
 
 ## Test build config
 ```
-$ cd repos/team_a
+$ cd bin/team_a
  
 $ gcloud config builds submit . --config=cloudbuild.yaml
 ```
