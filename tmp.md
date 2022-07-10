@@ -460,6 +460,8 @@ $ git add .
 $ git commit -m "Add Cloud Build YAML."
 $ git push --set-upstream origin HEAD
 $ cd ../..
+
+# Merge into master through UI
 ```
 
 # Enabling verifiable trust in artifacts from builds
