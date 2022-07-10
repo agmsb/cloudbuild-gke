@@ -372,12 +372,12 @@ $ gcloud config builds submit . --config=cloudbuild.yaml
 ## Create GKE binary authorization policy
 ```
 $ cat << EOF > tmp/policy.yaml
-    globalPolicyEvaluationMode: ENABLE
-    defaultAdmissionRule:
-      evaluationMode: REQUIRE_ATTESTATION
-      enforcementMode: ENFORCED_BLOCK_AND_AUDIT_LOG
-      requireAttestationsBy:
-      - projects/${PROJECT_ID}/attestors/${ATTESTOR_ID}
+globalPolicyEvaluationMode: ENABLE
+defaultAdmissionRule:
+    evaluationMode: REQUIRE_ATTESTATION
+    enforcementMode: ENFORCED_BLOCK_AND_AUDIT_LOG
+    requireAttestationsBy:
+    - projects/${PROJECT_ID}/attestors/${ATTESTOR_ID}
 EOF
 
 $ gcloud container binauthz policy import tmp/policy.yaml
