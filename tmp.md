@@ -1,14 +1,14 @@
 # Creating your target infrastructure 
 
+## Clone the example repo
+```
+$ git clone https://github.com/agmsb/cloudbuild-gke.git && cd cloudbuild-gke/08
+```
+
 ## Enable the needed Google Cloud APIs
 ```
 $ source bin/variables.sh
 $ gcloud services enable container.googleapis.com cloudbuild.googleapis.com secretmanager.googleapis.com artifactregistry.googleapis.com binaryauthorization.googleapis.com
-```
-
-## Clone the example repo
-```
-$ git clone https://github.com/agmsb/cloudbuild-gke.git && cd cloudbuild-gke/08
 ```
 
 ## Create VPCs and VPN
