@@ -13,7 +13,7 @@ $ gcloud config set project <replace-with-your-project-id>
 # Replace $GH_USERNAME with your GitHub username that you will be using in bin/variables.sh.
 
 $ source bin/variables.sh
-$ gcloud services enable container.googleapis.com cloudbuild.googleapis.com secretmanager.googleapis.com artifactregistry.googleapis.com binaryauthorization.googleapis.com servicenetworking.googleapis.com containeranalysis.googleapis.com
+$ gcloud services enable container.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com binaryauthorization.googleapis.com servicenetworking.googleapis.com containeranalysis.googleapis.com
 ```
 
 ## Create VPCs and VPN
