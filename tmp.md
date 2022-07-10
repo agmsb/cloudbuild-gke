@@ -452,6 +452,10 @@ $ git commit -m "Add Cloud Build YAML."
 $ git push --set-upstream origin HEAD
 $ cd ../$GH_B
 
+# Merge into master through UI
+
+$ git branch test
+$ git checkout test
 $ git add .
 $ git commit -m "Add Cloud Build YAML."
 $ git push --set-upstream origin HEAD
