@@ -455,7 +455,7 @@ $ cd ../..
 ## Create GKE binary authorization policy
 ```
 $ gcloud artifacts docker images describe \
-$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSISTORY_A/team-a-app:latest \
+$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/team-a-app:latest \
 --show-provenance
 
 $ cat << EOF > infra/policy.yaml
@@ -484,6 +484,12 @@ $ gcloud artifacts repositories add-iam-policy-binding $REPOSITORY_A \
 $ cd bin
 $ mkdir out-of-band && cd out-of-band
 
+$ gcloud artifacts docker images describe \
+$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/out-of-band-app:tag1 \
+--show-provenance
+
+$ DIGEST=$(gcloud artifacts docker images describe $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/out-of-band-app:tag1 --format="json" | jq '.image_summary."digest"' | cut -d "\"" -f 2)
+
 $ cat << EOF > k8s.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -501,7 +507,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/quickstart-image@sha256:88b205d7995332e10e836514fbfd59ecaf8976fc15060cd66e85cdcebe7fb356
+        image: $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY_A/out-of-band@$DIGEST
         imagePullPolicy: Always
 EOF
 
