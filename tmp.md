@@ -514,13 +514,12 @@ EOF
 $ cat << EOF > cloudbuild.yaml
 steps:
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
-    id: Get kubeconfig and apply manifests
+    id: Get kubeconfig and apply manifest of out of band app
     entrypoint: sh
     args:
       - '-c'
       - |
         gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
-        kubectl delete -f k8s.yaml -n $NAMESPACE_01
         kubectl apply -f k8s.yaml -n $NAMESPACE_01
 serviceAccount: 'projects/${PROJECT_ID}/serviceAccounts/${GCP_SA_NAME_01}@${PROJECT_ID}.iam.gserviceaccount.com'
 options:
